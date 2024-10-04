@@ -4,8 +4,8 @@ let dosBox;
 const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
-        js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
-        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.js`
+        js: `https://js-dos.com/${JS_DOS_VERSION}/js-dos.js`,
+        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/wdosbox.js`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
@@ -45,7 +45,7 @@ function isWebAssemblySupported() {
 }
 
 function isDosBoxAvailable() {
-    return typeof window.Dos === 'function' && typeof window.DosBox === 'object';
+    return typeof window.Dos === 'function';
 }
 
 async function loadScript(src, timeout = 10000) {
@@ -74,17 +74,31 @@ async function loadScript(src, timeout = 10000) {
 function validateJsDos() {
     return new Promise((resolve) => {
         setTimeout(() => {
-            const isDosValid = typeof window.Dos === 'function' &&
-                               typeof window.DosBox === 'object' &&
-                               typeof window.DosBox.Dos === 'function';
+            console.log('Validating js-dos...');
+            console.log('window.Dos:', typeof window.Dos);
+            console.log('window.DosBox:', typeof window.DosBox);
             
-            console.log('js-dos validation result:', isDosValid);
-            console.log('Dos:', typeof window.Dos);
-            console.log('DosBox:', typeof window.DosBox);
-            console.log('DosBox.Dos:', typeof window.DosBox?.Dos);
+            if (typeof window.Dos !== 'function') {
+                console.error('window.Dos is not a function');
+                resolve(false);
+                return;
+            }
             
-            resolve(isDosValid);
-        }, 500); // Add a 500ms delay to ensure js-dos has time to initialize
+            if (typeof window.DosBox !== 'object') {
+                console.error('window.DosBox is not an object');
+                resolve(false);
+                return;
+            }
+            
+            if (typeof window.DosBox.Dos !== 'function') {
+                console.error('window.DosBox.Dos is not a function');
+                resolve(false);
+                return;
+            }
+            
+            console.log('js-dos validation successful');
+            resolve(true);
+        }, 1000); // Increased delay to 1000ms
     });
 }
 
@@ -145,7 +159,7 @@ async function getDosBox() {
     if (!isDosBoxAvailable()) {
         throw new Error('DosBox is not available. Please ensure js-dos is loaded correctly.');
     }
-    return window.DosBox;
+    return window.Dos;
 }
 
 async function startDoom() {
@@ -161,8 +175,8 @@ async function startDoom() {
             throw new Error('jsdos element not found');
         }
         
-        const DosBox = await getDosBox();
-        dosBox = await DosBox.Dos(jsdos);
+        const Dos = await getDosBox();
+        dosBox = await Dos(jsdos);
         
         if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
             throw new Error('DosBox object does not have expected methods');
@@ -228,9 +242,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (fullscreenButton) {
         fullscreenButton.addEventListener("click", async () => {
             try {
-                const DosBox = await getDosBox();
-                if (dosBox && typeof DosBox.fullscreen === 'function') {
-                    DosBox.fullscreen();
+                const Dos = await getDosBox();
+                if (dosBox && typeof Dos.fullscreen === 'function') {
+                    Dos.fullscreen();
                 }
             } catch (error) {
                 console.error('Failed to enter fullscreen:', error);
