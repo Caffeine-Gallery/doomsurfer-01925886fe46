@@ -6,12 +6,12 @@ const CDN_URLS = [
     {
         js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
         wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.js`,
-        wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm`
+        wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm.js`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
         wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.js`,
-        wdosboxWasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm`
+        wdosboxWasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm.js`
     }
 ];
 
