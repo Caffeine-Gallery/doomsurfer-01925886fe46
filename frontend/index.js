@@ -204,11 +204,11 @@ async function startDoom() {
         console.log('DOOM mounted successfully');
         
         showLoadingIndicator(true, 75, 'Starting DOOM...');
-        if (typeof dosbox.run === 'function') {
-            await dosbox.run("DOOM.EXE");
+        if (dosbox && typeof dosbox.main === 'function') {
+            await dosbox.main(["-c", "MOUNT C .", "-c", "C:", "-c", "DOOM.EXE"]);
             console.log('DOOM started successfully');
         } else {
-            throw new Error('Unable to run DOOM.EXE. DosBox run method not available.');
+            throw new Error('Unable to run DOOM.EXE. DosBox main method not available.');
         }
         
         dosBox = dosbox;
