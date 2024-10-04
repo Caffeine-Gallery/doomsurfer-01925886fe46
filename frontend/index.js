@@ -207,20 +207,20 @@ async function startDoom() {
         
         showLoadingIndicator(true, 75, 'Mounting DOOM...');
         if (dosbox && dosbox.fs && typeof dosbox.fs.createFile === 'function') {
-            await dosbox.fs.createFile("DOOM.ZIP", new Uint8Array(doomZipContent));
-            console.log('DOOM.ZIP created successfully');
+            await dosbox.fs.createFile("DOOM-@evilution.zip", new Uint8Array(doomZipContent));
+            console.log('DOOM-@evilution.zip created successfully');
         } else {
-            throw new Error('Unable to create DOOM.ZIP file. DosBox file system not available.');
+            throw new Error('Unable to create DOOM-@evilution.zip file. DosBox file system not available.');
         }
         
         console.log('DOOM mounted successfully');
         
         showLoadingIndicator(true, 90, 'Starting DOOM...');
-        if (dosbox && typeof dosbox.main === 'function') {
-            await dosbox.main(["-c", "MOUNT C .", "-c", "C:", "-c", "DOOM.EXE"]);
+        if (dosbox && typeof dosbox.run === 'function') {
+            await dosbox.run("DOOM-@evilution.zip", "./DOOM/DOOM.EXE");
             console.log('DOOM started successfully');
         } else {
-            throw new Error('Unable to run DOOM.EXE. DosBox main method not available.');
+            throw new Error('Unable to run DOOM.EXE. DosBox run method not available.');
         }
         
         dosBox = dosbox;
