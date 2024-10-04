@@ -4,13 +4,13 @@ let dosBox;
 const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
-        js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
-        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/dosbox.js`,
-        wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm`
+        js: `https://js-dos.com/${JS_DOS_VERSION}/js-dos.js`,
+        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/wdosbox.js`,
+        wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/wdosbox.wasm`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
-        wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/dosbox.js`,
+        wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.js`,
         wdosboxWasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm`
     }
 ];
@@ -47,7 +47,7 @@ function isWebAssemblySupported() {
 }
 
 function isDosAvailable() {
-    return typeof window.Dos === 'function';
+    return typeof window.DosPlayer === 'function';
 }
 
 async function loadScript(src, timeout = 10000) {
@@ -77,10 +77,10 @@ function validateJsDos() {
     return new Promise((resolve) => {
         setTimeout(() => {
             console.log('Validating js-dos...');
-            console.log('window.Dos:', typeof window.Dos);
+            console.log('window.DosPlayer:', typeof window.DosPlayer);
             
-            if (typeof window.Dos !== 'function') {
-                console.error('window.Dos is not a function');
+            if (typeof window.DosPlayer !== 'function') {
+                console.error('window.DosPlayer is not a function');
                 resolve(false);
                 return;
             }
@@ -99,13 +99,10 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
                 showLoadingIndicator(true, 0, `Attempting to load js-dos from ${url.js}...`);
                 await loadScript(url.js);
                 
-                showLoadingIndicator(true, 50, `Loading dosbox...`);
-                await loadScript(url.wdosbox);
-
                 const isValid = await validateJsDos();
                 if (isValid) {
                     showLoadingIndicator(true, 100, 'js-dos loaded successfully');
-                    return window.Dos;
+                    return window.DosPlayer;
                 } else {
                     throw new Error('Loaded scripts are not valid js-dos files');
                 }
@@ -131,7 +128,7 @@ async function loadJsDosFromFile(file) {
                 document.head.appendChild(script);
                 const isValid = await validateJsDos();
                 if (isValid) {
-                    resolve(window.Dos);
+                    resolve(window.DosPlayer);
                 } else {
                     reject(new Error('Loaded file is not a valid js-dos script'));
                 }
@@ -146,17 +143,17 @@ async function loadJsDosFromFile(file) {
 
 async function getDos() {
     if (!isDosAvailable()) {
-        throw new Error('Dos is not available. Please ensure js-dos is loaded correctly.');
+        throw new Error('DosPlayer is not available. Please ensure js-dos is loaded correctly.');
     }
-    return window.Dos;
+    return window.DosPlayer;
 }
 
 async function initializeDosBox(canvas) {
-    const Dos = await getDos();
-    if (!Dos || typeof Dos.create !== 'function') {
-        throw new Error('Dos.create is not available. Please ensure js-dos is loaded correctly.');
+    const DosPlayer = await getDos();
+    if (!DosPlayer) {
+        throw new Error('DosPlayer is not available. Please ensure js-dos is loaded correctly.');
     }
-    return await Dos.create(canvas);
+    return new DosPlayer(canvas);
 }
 
 async function downloadZipFile(url) {
@@ -190,13 +187,10 @@ async function startDoom() {
         const doomZipUrl = "https://js-dos.com/cdn/upload/DOOM-@evilution.zip";
         
         showLoadingIndicator(true, 75, 'Mounting and starting DOOM...');
-        await dos.mount(doomZipUrl);
-        
-        showLoadingIndicator(true, 90, 'Starting DOOM...');
-        await dos.run([
-            "cd DOOM",
-            "DOOM.EXE"
-        ]);
+        await dos.run(doomZipUrl, {
+            cycles: "max",
+            autolock: false
+        });
         
         console.log('DOOM started successfully');
         dosBox = dos;
