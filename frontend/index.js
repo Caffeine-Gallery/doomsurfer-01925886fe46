@@ -194,7 +194,15 @@ async function startDoom() {
         console.log('DosBox initialized');
         
         showLoadingIndicator(true, 50, 'Mounting DOOM...');
-        await dosbox.mount("https://js-dos.com/6.22/current/games/DOOM.zip");
+        await new Promise((resolve, reject) => {
+            dosbox.fs.createFile("DOOM.ZIP", "https://js-dos.com/6.22/current/games/DOOM.zip").then(() => {
+                console.log('DOOM.ZIP created successfully');
+                resolve();
+            }).catch(error => {
+                console.error('Failed to create DOOM.ZIP:', error);
+                reject(error);
+            });
+        });
         
         console.log('DOOM mounted successfully');
         
