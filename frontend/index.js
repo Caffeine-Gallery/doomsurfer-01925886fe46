@@ -1,12 +1,16 @@
 import { backend } from 'declarations/backend';
 
 let dosBox;
+const JS_DOS_VERSION = '6.22';
+const PRIMARY_CDN = `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`;
+const FALLBACK_CDN = `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`;
 
-function showLoadingIndicator(show, progress = 0) {
+function showLoadingIndicator(show, progress = 0, message = '') {
     const indicator = document.getElementById("loadingIndicator");
     const progressSpan = document.getElementById("loadingProgress");
     indicator.style.display = show ? "block" : "none";
     progressSpan.textContent = `${progress}%`;
+    indicator.textContent = `${message} ${progressSpan.outerHTML}`;
 }
 
 function showErrorMessage(message) {
@@ -27,28 +31,45 @@ function isWebAssemblySupported() {
 }
 
 function isDosBoxAvailable() {
-    return typeof window.DosBox !== 'undefined' && typeof window.DosBox === 'function';
+    return typeof window.Dos !== 'undefined' && typeof window.Dos === 'function';
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
 }
 
 async function loadJsDos(timeout = 30000) {
-    return new Promise((resolve, reject) => {
-        if (window.jsDosLoadError) {
-            reject(new Error('js-dos failed to load'));
-            return;
-        }
+    showLoadingIndicator(true, 0, 'Loading js-dos...');
+    const startTime = Date.now();
 
-        const startTime = Date.now();
+    try {
+        await loadScript(PRIMARY_CDN);
+    } catch (error) {
+        console.warn('Failed to load js-dos from primary CDN, trying fallback...', error);
+        try {
+            await loadScript(FALLBACK_CDN);
+        } catch (fallbackError) {
+            throw new Error('Failed to load js-dos from both primary and fallback CDNs');
+        }
+    }
+
+    return new Promise((resolve, reject) => {
         const checkInterval = setInterval(() => {
             if (isDosBoxAvailable()) {
                 clearInterval(checkInterval);
                 resolve(true);
-            } else if (window.jsDosLoadError) {
-                clearInterval(checkInterval);
-                reject(new Error('js-dos failed to load'));
             } else if (Date.now() - startTime > timeout) {
                 clearInterval(checkInterval);
                 reject(new Error('Timeout waiting for js-dos to load'));
             }
+            const progress = Math.min(Math.floor((Date.now() - startTime) / (timeout / 100)), 99);
+            showLoadingIndicator(true, progress, 'Loading js-dos...');
         }, 100);
     });
 }
@@ -59,23 +80,20 @@ async function startDoom() {
             throw new Error('WebAssembly is not supported in this browser');
         }
         
-        showLoadingIndicator(true, 0);
+        showLoadingIndicator(true, 0, 'Initializing DosBox...');
         
         const jsdos = document.getElementById("jsdos");
-        dosBox = await DosBox(jsdos, {
-            wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
-            wasmUrl: "https://js-dos.com/6.22/current/wdosbox.wasm"
-        });
+        dosBox = await Dos(jsdos);
         
         if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
             throw new Error('DosBox object does not have expected methods');
         }
         
-        showLoadingIndicator(true, 50);
+        showLoadingIndicator(true, 50, 'Mounting DOOM...');
         
         await dosBox.mount("https://js-dos.com/6.22/current/games/DOOM.zip");
         
-        showLoadingIndicator(true, 75);
+        showLoadingIndicator(true, 75, 'Starting DOOM...');
         
         await dosBox.run("DOOM.EXE");
         
@@ -92,16 +110,6 @@ async function startDoom() {
 async function retryLoad() {
     showErrorMessage('');
     document.getElementById("retryLoad").style.display = "none";
-    showLoadingIndicator(true, 0);
-    
-    const script = document.createElement('script');
-    script.src = "https://js-dos.com/6.22/current/js-dos.js";
-    script.onerror = () => {
-        window.jsDosLoadError = true;
-        showErrorMessage('Failed to load js-dos. Please check your internet connection and try again.');
-        document.getElementById("retryLoad").style.display = "inline-block";
-    };
-    document.head.appendChild(script);
     
     try {
         await loadJsDos();
@@ -129,7 +137,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     retryButton.addEventListener("click", retryLoad);
 
     startButton.disabled = true;
-    showLoadingIndicator(true, 0);
 
     try {
         if (!isWebAssemblySupported()) {
@@ -141,8 +148,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Failed to initialize:', error);
         showErrorMessage(`Initialization failed: ${error.message}. Please check your browser compatibility or try a different browser.`);
         retryButton.style.display = "inline-block";
-    } finally {
-        showLoadingIndicator(false);
     }
 });
 
