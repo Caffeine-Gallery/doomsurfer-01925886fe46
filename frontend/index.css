@@ -36,7 +36,12 @@ button {
     font-size: 16px;
 }
 
-button:hover {
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
     background-color: #ff7066;
 }
 
@@ -55,6 +60,12 @@ button:hover {
 
 .instructions p {
     margin: 10px 0;
+}
+
+#loadingIndicator {
+    margin-top: 10px;
+    font-style: italic;
+    color: #ff4136;
 }
 
 @media (max-width: 600px) {
