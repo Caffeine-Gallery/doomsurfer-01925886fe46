@@ -195,7 +195,7 @@ async function startDoom() {
         
         showLoadingIndicator(true, 50, 'Mounting DOOM...');
         if (dosbox && dosbox.fs && typeof dosbox.fs.createFile === 'function') {
-            await dosbox.fs.createFile("DOOM.ZIP", "https://js-dos.com/6.22/current/games/DOOM.zip");
+            await dosbox.fs.createFile("DOOM.ZIP", "https://js-dos.com/cdn/upload/DOOM-@evilution.zip");
             console.log('DOOM.ZIP created successfully');
         } else {
             throw new Error('Unable to create DOOM.ZIP file. DosBox file system not available.');
