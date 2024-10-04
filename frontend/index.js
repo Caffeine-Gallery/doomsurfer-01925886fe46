@@ -152,24 +152,11 @@ async function getDos() {
 }
 
 async function initializeDosBox(canvas) {
-    return new Promise((resolve, reject) => {
-        const Dos = window.Dos;
-        if (!Dos) {
-            reject(new Error('Dos object not found'));
-            return;
-        }
-
-        Dos(canvas, {
-            wdosboxUrl: CDN_URLS[0].wdosbox,
-            wasmUrl: CDN_URLS[0].wdosboxWasm
-        }).then(dosbox => {
-            console.log('DosBox is ready');
-            resolve(dosbox);
-        }).catch(error => {
-            console.error('DosBox error:', error);
-            reject(error);
-        });
-    });
+    const Dos = await getDos();
+    if (!Dos || typeof Dos.create !== 'function') {
+        throw new Error('Dos.create is not available. Please ensure js-dos is loaded correctly.');
+    }
+    return await Dos.create(canvas);
 }
 
 async function downloadZipFile(url) {
@@ -194,11 +181,8 @@ async function startDoom() {
             throw new Error('Canvas element not found or invalid');
         }
         
-        const Dos = await getDos();
-        console.log('Dos object acquired');
-        
         showLoadingIndicator(true, 25, 'Initializing DosBox...');
-        const ci = await Dos.ci(canvas);
+        const dos = await initializeDosBox(canvas);
         
         console.log('DosBox initialized');
         
@@ -206,16 +190,16 @@ async function startDoom() {
         const doomZipUrl = "https://js-dos.com/cdn/upload/DOOM-@evilution.zip";
         
         showLoadingIndicator(true, 75, 'Mounting and starting DOOM...');
-        await ci.mount(doomZipUrl);
+        await dos.mount(doomZipUrl);
         
         showLoadingIndicator(true, 90, 'Starting DOOM...');
-        await ci.dosboxDirect([
+        await dos.run([
             "cd DOOM",
             "DOOM.EXE"
         ]);
         
         console.log('DOOM started successfully');
-        dosBox = ci;
+        dosBox = dos;
         showLoadingIndicator(false);
     } catch (error) {
         console.error('Failed to start DOOM:', error);
