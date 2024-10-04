@@ -3,9 +3,18 @@ import { backend } from 'declarations/backend';
 let dosBox;
 const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
-    `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
-    `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
-    '/js-dos.js' // Local fallback
+    {
+        js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
+        wasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm`
+    },
+    {
+        js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
+        wasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm`
+    },
+    {
+        js: '/js-dos.js',
+        wasm: '/wdosbox.wasm'
+    }
 ];
 
 function showLoadingIndicator(show, progress = 0, message = '') {
@@ -43,12 +52,10 @@ function isDosBoxAvailable() {
     return typeof window.Dos !== 'undefined' && typeof window.Dos === 'function';
 }
 
-function loadScript(src, timeout = 10000) {
+async function loadScript(src, timeout = 10000) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
 
         const timeoutId = setTimeout(() => {
             reject(new Error(`Script load timed out for ${src}`));
@@ -68,18 +75,38 @@ function loadScript(src, timeout = 10000) {
     });
 }
 
+async function isValidWebAssembly(url) {
+    try {
+        const response = await fetch(url);
+        const buffer = await response.arrayBuffer();
+        await WebAssembly.compile(buffer);
+        return true;
+    } catch (error) {
+        console.error(`Invalid WebAssembly file at ${url}:`, error);
+        return false;
+    }
+}
+
 async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
     for (let i = 0; i < retries; i++) {
         for (const url of CDN_URLS) {
             try {
-                showLoadingIndicator(true, 0, `Attempting to load js-dos from ${url}...`);
-                await loadScript(url);
+                showLoadingIndicator(true, 0, `Attempting to load js-dos from ${url.js}...`);
+                await loadScript(url.js);
+                
+                showLoadingIndicator(true, 50, `Verifying WebAssembly file...`);
+                const isValidWasm = await isValidWebAssembly(url.wasm);
+                if (!isValidWasm) {
+                    throw new Error(`Invalid WebAssembly file at ${url.wasm}`);
+                }
+
                 if (isDosBoxAvailable()) {
+                    window.emulators.pathPrefix = url.wasm.substring(0, url.wasm.lastIndexOf('/') + 1);
                     showLoadingIndicator(true, 100, 'js-dos loaded successfully');
                     return;
                 }
             } catch (error) {
-                console.warn(`Failed to load js-dos from ${url}:`, error);
+                console.warn(`Failed to load js-dos from ${url.js}:`, error);
             }
         }
         const delay = backoff * Math.pow(2, i);
