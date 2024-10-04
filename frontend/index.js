@@ -4,14 +4,14 @@ let dosBox;
 const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
-        js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
-        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/dosbox.js`,
-        wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm.js`
+        js: `https://js-dos.com/${JS_DOS_VERSION}/js-dos.js`,
+        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/dosbox.js`,
+        wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/wdosbox.wasm`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
         wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/dosbox.js`,
-        wdosboxWasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm.js`
+        wdosboxWasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm`
     }
 ];
 
@@ -165,25 +165,24 @@ async function startDoom() {
         }
         
         const Dos = await getDos();
-        const wasmUrl = `${CDN_URLS[0].wdosboxWasm}?v=${Date.now()}`; // Add cache-busting parameter
-        console.log('Using WASM URL:', wasmUrl); // Log the WASM URL being used
-        dosBox = await Dos(jsdos, { 
+        const ci = await Dos(jsdos, { 
             wdosboxUrl: CDN_URLS[0].wdosbox,
-            wasmUrl: wasmUrl
+            wasmUrl: CDN_URLS[0].wdosboxWasm
         });
         
-        if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
+        if (typeof ci.mount !== 'function' || typeof ci.run !== 'function') {
             throw new Error('DosBox object does not have expected methods');
         }
         
         showLoadingIndicator(true, 50, 'Mounting DOOM...');
         
-        await dosBox.mount("https://js-dos.com/6.22/current/games/DOOM.zip");
+        await ci.mount("https://js-dos.com/6.22/current/games/DOOM.zip");
         
         showLoadingIndicator(true, 75, 'Starting DOOM...');
         
-        await dosBox.run("DOOM.EXE");
+        await ci.run("DOOM.EXE");
         
+        dosBox = ci;
         showLoadingIndicator(false);
     } catch (error) {
         console.error('Failed to start DOOM:', error);
