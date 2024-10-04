@@ -30,19 +30,6 @@ function isDosBoxAvailable() {
     return typeof window.Dos !== 'undefined' && typeof window.Dos === 'function';
 }
 
-async function checkWebAssemblyFile(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const buffer = await response.arrayBuffer();
-        await WebAssembly.compile(buffer);
-        return true;
-    } catch (e) {
-        console.error("WebAssembly file check failed:", e);
-        return false;
-    }
-}
-
 async function loadJsDos(timeout = 30000) {
     return new Promise((resolve, reject) => {
         if (window.jsDosLoadError) {
@@ -66,39 +53,30 @@ async function loadJsDos(timeout = 30000) {
     });
 }
 
-async function waitForDosBox(timeout = 30000) {
-    const startTime = Date.now();
-    let progress = 0;
-    while (!isDosBoxAvailable()) {
-        if (Date.now() - startTime > timeout) {
-            throw new Error('Timeout waiting for DosBox to become available');
-        }
-        progress = Math.min(Math.floor((Date.now() - startTime) / (timeout / 100)), 99);
-        showLoadingIndicator(true, progress);
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    showLoadingIndicator(true, 100);
-}
-
 async function startDoom() {
     try {
         if (!isWebAssemblySupported()) {
             throw new Error('WebAssembly is not supported in this browser');
         }
-        await waitForDosBox();
-
-        const wasmUrl = '/wdosbox.wasm';
-        const isWasmAvailable = await checkWebAssemblyFile(wasmUrl);
-        if (!isWasmAvailable) {
-            throw new Error('WebAssembly file is not accessible or valid');
-        }
-
+        
+        showLoadingIndicator(true, 0);
+        
         const jsdos = document.getElementById("jsdos");
         dosBox = await Dos(jsdos, {
-            wdosboxUrl: "/wdosbox.js",
-            wasmUrl: wasmUrl
+            wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
+            wasmUrl: "https://js-dos.com/6.22/current/wdosbox.wasm"
         });
-        await dosBox.run("https://js-dos.com/6.22/current/games/DOOM.zip");
+        
+        showLoadingIndicator(true, 50);
+        
+        await dosBox.run("https://js-dos.com/6.22/current/games/DOOM.zip", {
+            onprogress: (stage, total, loaded) => {
+                const progress = Math.floor((loaded / total) * 100);
+                showLoadingIndicator(true, 50 + progress / 2);
+            }
+        });
+        
+        showLoadingIndicator(false);
     } catch (error) {
         console.error('Failed to start DOOM:', error);
         showErrorMessage(`Failed to start DOOM: ${error.message}. Please try refreshing the page or click "Retry Loading".`);
@@ -112,6 +90,15 @@ async function retryLoad() {
     showErrorMessage('');
     document.getElementById("retryLoad").style.display = "none";
     showLoadingIndicator(true, 0);
+    
+    const script = document.createElement('script');
+    script.src = "https://js-dos.com/6.22/current/js-dos.js";
+    script.onerror = () => {
+        window.jsDosLoadError = true;
+        showErrorMessage('Failed to load js-dos. Please check your internet connection and try again.');
+        document.getElementById("retryLoad").style.display = "inline-block";
+    };
+    document.head.appendChild(script);
     
     try {
         await loadJsDos();
