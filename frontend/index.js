@@ -2,9 +2,11 @@ import { backend } from 'declarations/backend';
 
 let dosBox;
 
-function showLoadingIndicator(show) {
+function showLoadingIndicator(show, progress = 0) {
     const indicator = document.getElementById("loadingIndicator");
+    const progressSpan = document.getElementById("loadingProgress");
     indicator.style.display = show ? "block" : "none";
+    progressSpan.textContent = `${progress}%`;
 }
 
 function showErrorMessage(message) {
@@ -14,50 +16,46 @@ function showErrorMessage(message) {
 }
 
 function isDosBoxAvailable() {
-    return typeof DosBox !== 'undefined' && DosBox && typeof DosBox.create === 'function';
+    return typeof window.DosBox !== 'undefined' && window.DosBox && typeof window.DosBox.create === 'function';
 }
 
-async function waitForDosBox(timeout = 10000) {
+async function loadJsDos() {
+    try {
+        const JsDos = await import('https://js-dos.com/6.22/current/js-dos.js');
+        window.DosBox = JsDos.DosBox;
+        return true;
+    } catch (error) {
+        console.error('Failed to load js-dos:', error);
+        return false;
+    }
+}
+
+async function waitForDosBox(timeout = 30000) {
     const startTime = Date.now();
+    let loadAttempts = 0;
     while (!isDosBoxAvailable()) {
         if (Date.now() - startTime > timeout) {
             throw new Error('Timeout waiting for DosBox to become available');
         }
-        await new Promise(resolve => setTimeout(resolve, 100));
+        loadAttempts++;
+        showLoadingIndicator(true, Math.min(loadAttempts * 10, 90));
+        await loadJsDos();
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
-}
-
-function loadJsDos(retries = 3) {
-    return new Promise((resolve, reject) => {
-        if (isDosBoxAvailable()) {
-            resolve();
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.src = 'https://js-dos.com/6.22/current/js-dos.js';
-        script.onload = resolve;
-        script.onerror = () => {
-            if (retries > 0) {
-                console.log(`Retrying to load js-dos. Attempts left: ${retries - 1}`);
-                setTimeout(() => loadJsDos(retries - 1).then(resolve).catch(reject), 1000);
-            } else {
-                reject(new Error('Failed to load js-dos after multiple attempts'));
-            }
-        };
-        document.head.appendChild(script);
-    });
+    showLoadingIndicator(true, 100);
 }
 
 async function startDoom() {
     try {
         await waitForDosBox();
         const jsdos = document.getElementById("jsdos");
-        dosBox = await DosBox.create(jsdos);
+        dosBox = await window.DosBox.create(jsdos);
         await dosBox.run("https://js-dos.com/6.22/current/games/DOOM.zip");
     } catch (error) {
         console.error('Failed to start DOOM:', error);
         showErrorMessage('Failed to start DOOM. Please try refreshing the page.');
+    } finally {
+        showLoadingIndicator(false);
     }
 }
 
@@ -73,17 +71,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     startButton.disabled = true;
-    showLoadingIndicator(true);
+    showLoadingIndicator(true, 0);
 
     try {
-        await loadJsDos();
         await waitForDosBox();
         startButton.disabled = false;
-        showLoadingIndicator(false);
     } catch (error) {
         console.error('Failed to load js-dos:', error);
-        showLoadingIndicator(false);
         showErrorMessage('Failed to load js-dos library. Please check your internet connection and try refreshing the page.');
+    } finally {
+        showLoadingIndicator(false);
     }
 });
 
