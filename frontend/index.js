@@ -216,11 +216,13 @@ async function startDoom() {
         console.log('DOOM mounted successfully');
         
         showLoadingIndicator(true, 90, 'Starting DOOM...');
-        if (dosbox && typeof dosbox.run === 'function') {
-            await dosbox.run("DOOM-@evilution.zip", "./DOOM/DOOM.EXE");
+        if (dosbox && typeof dosbox.mount === 'function' && typeof dosbox.extract === 'function') {
+            await dosbox.mount("DOOM-@evilution.zip");
+            await dosbox.extract("DOOM-@evilution.zip");
+            await dosbox.main(["-c", "cd DOOM", "-c", "DOOM.EXE"]);
             console.log('DOOM started successfully');
         } else {
-            throw new Error('Unable to run DOOM.EXE. DosBox run method not available.');
+            throw new Error('Unable to run DOOM.EXE. Required DosBox methods not available.');
         }
         
         dosBox = dosbox;
