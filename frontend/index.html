@@ -5,27 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DOOM Emulator</title>
     <link rel="stylesheet" href="index.css">
-    <script type="module" src="index.js"></script>
 </head>
 <body>
-    <div class="container">
+    <div id="app">
         <h1>DOOM Emulator</h1>
         <div id="jsdos"></div>
-        <button id="startGame" disabled>Start Game</button>
+        <button id="startGame" disabled>Start DOOM</button>
         <button id="fullscreen">Fullscreen</button>
         <button id="retryLoad" style="display: none;">Retry Loading</button>
+        <input type="file" id="manualJsDosUpload" accept=".js" style="display: none;">
         <div id="loadingIndicator" style="display: none;">
-            <span id="loadingMessage">Loading...</span>
-            <span id="loadingProgress">0%</span>
+            Loading: <span id="loadingProgress">0%</span>
+            <span id="loadingMessage"></span>
         </div>
-        <div id="errorMessage" style="display: none; color: red;"></div>
+        <div id="errorMessage" style="display: none;"></div>
     </div>
-    <div class="instructions">
-        <h2>Instructions</h2>
-        <p>1. Click "Start Game" to load DOOM</p>
-        <p>2. Use arrow keys to move, Ctrl to shoot, and Spacebar to open doors</p>
-        <p>3. Press Esc to access the game menu</p>
-        <p>4. Click "Fullscreen" for a more immersive experience</p>
-    </div>
+    <script type="module" src="index.js"></script>
 </body>
 </html>

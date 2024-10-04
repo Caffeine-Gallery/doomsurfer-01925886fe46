@@ -4,8 +4,8 @@ let dosBox;
 const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
-        js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
-        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.js`
+        js: `https://js-dos.com/${JS_DOS_VERSION}/js-dos.js`,
+        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/wdosbox.js`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
@@ -71,7 +71,12 @@ async function loadScript(src, timeout = 10000) {
     });
 }
 
+function validateJsDos() {
+    return typeof Dos === 'function' && typeof DosBox === 'object';
+}
+
 async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
+    let lastError;
     for (let i = 0; i < retries; i++) {
         for (const url of CDN_URLS) {
             try {
@@ -81,19 +86,44 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
                 showLoadingIndicator(true, 50, `Loading wdosbox...`);
                 await loadScript(url.wdosbox);
 
-                if (isDosBoxAvailable()) {
+                if (validateJsDos()) {
                     showLoadingIndicator(true, 100, 'js-dos loaded successfully');
                     return;
+                } else {
+                    throw new Error('Loaded scripts are not valid js-dos files');
                 }
             } catch (error) {
                 console.warn(`Failed to load js-dos from ${url.js}:`, error);
+                lastError = error;
             }
         }
         const delay = backoff * Math.pow(2, i);
         console.log(`Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
     }
-    throw new Error('Failed to load js-dos after multiple attempts. Please check your internet connection and try again.');
+    throw new Error(`Failed to load js-dos after multiple attempts. Last error: ${lastError?.message || 'Unknown error'}`);
+}
+
+async function loadJsDosFromFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const script = document.createElement('script');
+                script.textContent = event.target.result;
+                document.head.appendChild(script);
+                if (validateJsDos()) {
+                    resolve();
+                } else {
+                    reject(new Error('Loaded file is not a valid js-dos script'));
+                }
+            } catch (error) {
+                reject(error);
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+    });
 }
 
 async function startDoom() {
@@ -109,7 +139,7 @@ async function startDoom() {
             throw new Error('jsdos element not found');
         }
         
-        dosBox = await DosBox.Dos(jsdos);
+        dosBox = await Dos(jsdos);
         
         if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
             throw new Error('DosBox object does not have expected methods');
@@ -151,9 +181,10 @@ async function retryLoad() {
         }
     } catch (error) {
         console.error('Failed to load js-dos:', error);
-        showErrorMessage(`Failed to load required resources: ${error.message}. Please check your internet connection and try again.`);
-        if (retryButton) {
-            retryButton.style.display = "inline-block";
+        showErrorMessage(`Failed to load required resources: ${error.message}. Please try uploading js-dos files manually.`);
+        const fileInput = document.getElementById("manualJsDosUpload");
+        if (fileInput) {
+            fileInput.style.display = "inline-block";
         }
     } finally {
         showLoadingIndicator(false);
@@ -164,6 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const startButton = document.getElementById("startGame");
     const fullscreenButton = document.getElementById("fullscreen");
     const retryButton = document.getElementById("retryLoad");
+    const fileInput = document.getElementById("manualJsDosUpload");
 
     if (startButton) {
         startButton.addEventListener("click", startDoom);
@@ -182,6 +214,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         retryButton.addEventListener("click", retryLoad);
     }
 
+    if (fileInput) {
+        fileInput.addEventListener("change", async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                try {
+                    await loadJsDosFromFile(file);
+                    showErrorMessage('');
+                    fileInput.style.display = "none";
+                    if (startButton) {
+                        startButton.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Failed to load js-dos from file:', error);
+                    showErrorMessage(`Failed to load js-dos from file: ${error.message}`);
+                }
+            }
+        });
+    }
+
     try {
         if (!isWebAssemblySupported()) {
             throw new Error('WebAssembly is not supported in this browser');
@@ -192,9 +243,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (error) {
         console.error('Failed to initialize:', error);
-        showErrorMessage(`Initialization failed: ${error.message}. Please check your internet connection or try a different browser.`);
-        if (retryButton) {
-            retryButton.style.display = "inline-block";
+        showErrorMessage(`Initialization failed: ${error.message}. Please try uploading js-dos files manually.`);
+        if (fileInput) {
+            fileInput.style.display = "inline-block";
         }
     }
 });
