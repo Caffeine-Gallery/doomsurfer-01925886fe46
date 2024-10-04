@@ -10,10 +10,6 @@ const CDN_URLS = [
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
         wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.js`
-    },
-    {
-        js: '/js-dos.js',
-        wdosbox: '/wdosbox.js'
     }
 ];
 
@@ -97,7 +93,7 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
         console.log(`Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
     }
-    throw new Error('Failed to load js-dos after multiple attempts');
+    throw new Error('Failed to load js-dos after multiple attempts. Please check your internet connection and try again.');
 }
 
 async function startDoom() {
@@ -196,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (error) {
         console.error('Failed to initialize:', error);
-        showErrorMessage(`Initialization failed: ${error.message}. Please check your browser compatibility or try a different browser.`);
+        showErrorMessage(`Initialization failed: ${error.message}. Please check your internet connection or try a different browser.`);
         if (retryButton) {
             retryButton.style.display = "inline-block";
         }
