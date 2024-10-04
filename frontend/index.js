@@ -151,17 +151,27 @@ async function getDos() {
     return window.Dos;
 }
 
-async function waitForDosBoxMethods(ci, timeout = 60000) {
-    const start = Date.now();
-    while (Date.now() - start < timeout) {
-        if (typeof ci.mount === 'function' && typeof ci.run === 'function') {
-            return true;
+async function initializeDosBox(jsdos) {
+    return new Promise((resolve, reject) => {
+        const Dos = window.Dos;
+        if (!Dos) {
+            reject(new Error('Dos object not found'));
+            return;
         }
-        await new Promise(resolve => setTimeout(resolve, 100));
-        console.log('Waiting for DosBox methods...', Date.now() - start);
-        showLoadingIndicator(true, Math.min(100, Math.floor((Date.now() - start) / timeout * 100)), 'Initializing DosBox...');
-    }
-    return false;
+
+        const ci = Dos(jsdos, {
+            wdosboxUrl: CDN_URLS[0].wdosbox,
+            wasmUrl: CDN_URLS[0].wdosboxWasm,
+            onready: (fs, main) => {
+                console.log('DosBox is ready');
+                resolve({ ci, fs, main });
+            },
+            onerror: (error) => {
+                console.error('DosBox error:', error);
+                reject(error);
+            }
+        });
+    });
 }
 
 async function startDoom() {
@@ -177,32 +187,41 @@ async function startDoom() {
             throw new Error('jsdos element not found');
         }
         
-        const Dos = await getDos();
-        console.log('Dos object:', Dos);
+        await getDos();
+        console.log('Dos object acquired');
         
-        const ci = await new Promise((resolve, reject) => {
-            Dos(jsdos, { 
-                wdosboxUrl: CDN_URLS[0].wdosbox,
-                wasmUrl: CDN_URLS[0].wdosboxWasm
-            }).then(resolve).catch(reject);
-        });
+        showLoadingIndicator(true, 25, 'Initializing DosBox...');
+        const { ci, fs, main } = await initializeDosBox(jsdos);
         
-        console.log('DosBox instance:', ci);
-        
-        const methodsReady = await waitForDosBoxMethods(ci);
-        if (!methodsReady) {
-            throw new Error('DosBox methods not available after timeout');
-        }
-        
-        console.log('DosBox methods:', { mount: typeof ci.mount, run: typeof ci.run });
+        console.log('DosBox initialized');
         
         showLoadingIndicator(true, 50, 'Mounting DOOM...');
-        
-        await ci.mount("https://js-dos.com/6.22/current/games/DOOM.zip");
+        await new Promise((resolve, reject) => {
+            ci.mount("https://js-dos.com/6.22/current/games/DOOM.zip", {
+                success: () => {
+                    console.log('DOOM mounted successfully');
+                    resolve();
+                },
+                error: (error) => {
+                    console.error('Failed to mount DOOM:', error);
+                    reject(new Error('Failed to mount DOOM'));
+                }
+            });
+        });
         
         showLoadingIndicator(true, 75, 'Starting DOOM...');
-        
-        await ci.run("DOOM.EXE");
+        await new Promise((resolve, reject) => {
+            ci.run("DOOM.EXE", {
+                success: () => {
+                    console.log('DOOM started successfully');
+                    resolve();
+                },
+                error: (error) => {
+                    console.error('Failed to start DOOM:', error);
+                    reject(new Error('Failed to start DOOM'));
+                }
+            });
+        });
         
         dosBox = ci;
         showLoadingIndicator(false);
