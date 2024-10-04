@@ -6,12 +6,12 @@ const CDN_URLS = [
     {
         js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
         wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.js`,
-        wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm.js`
+        wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
         wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.js`,
-        wdosboxWasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm.js`
+        wdosboxWasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm`
     }
 ];
 
@@ -99,11 +99,8 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
                 showLoadingIndicator(true, 0, `Attempting to load js-dos from ${url.js}...`);
                 await loadScript(url.js);
                 
-                showLoadingIndicator(true, 33, `Loading wdosbox...`);
+                showLoadingIndicator(true, 50, `Loading wdosbox...`);
                 await loadScript(url.wdosbox);
-
-                showLoadingIndicator(true, 66, `Loading wdosbox.wasm...`);
-                await loadScript(url.wdosboxWasm);
 
                 const isValid = await validateJsDos();
                 if (isValid) {
