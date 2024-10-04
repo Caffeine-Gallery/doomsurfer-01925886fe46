@@ -151,7 +151,7 @@ async function getDos() {
     return window.Dos;
 }
 
-async function waitForDosBoxMethods(ci, timeout = 30000) {
+async function waitForDosBoxMethods(ci, timeout = 60000) {
     const start = Date.now();
     while (Date.now() - start < timeout) {
         if (typeof ci.mount === 'function' && typeof ci.run === 'function') {
@@ -159,6 +159,7 @@ async function waitForDosBoxMethods(ci, timeout = 30000) {
         }
         await new Promise(resolve => setTimeout(resolve, 100));
         console.log('Waiting for DosBox methods...', Date.now() - start);
+        showLoadingIndicator(true, Math.min(100, Math.floor((Date.now() - start) / timeout * 100)), 'Initializing DosBox...');
     }
     return false;
 }
