@@ -4,8 +4,8 @@ let dosBox;
 const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
-        js: `https://js-dos.com/${JS_DOS_VERSION}/js-dos.js`,
-        wasm: `https://js-dos.com/${JS_DOS_VERSION}/wdosbox.wasm`
+        js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
+        wasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
