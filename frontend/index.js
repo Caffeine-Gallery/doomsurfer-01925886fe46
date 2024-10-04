@@ -151,13 +151,14 @@ async function getDos() {
     return window.Dos;
 }
 
-async function waitForDosBoxMethods(ci, timeout = 10000) {
+async function waitForDosBoxMethods(ci, timeout = 30000) {
     const start = Date.now();
     while (Date.now() - start < timeout) {
         if (typeof ci.mount === 'function' && typeof ci.run === 'function') {
             return true;
         }
         await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('Waiting for DosBox methods...', Date.now() - start);
     }
     return false;
 }
@@ -178,9 +179,11 @@ async function startDoom() {
         const Dos = await getDos();
         console.log('Dos object:', Dos);
         
-        const ci = await Dos(jsdos, { 
-            wdosboxUrl: CDN_URLS[0].wdosbox,
-            wasmUrl: CDN_URLS[0].wdosboxWasm
+        const ci = await new Promise((resolve, reject) => {
+            Dos(jsdos, { 
+                wdosboxUrl: CDN_URLS[0].wdosbox,
+                wasmUrl: CDN_URLS[0].wdosboxWasm
+            }).then(resolve).catch(reject);
         });
         
         console.log('DosBox instance:', ci);
