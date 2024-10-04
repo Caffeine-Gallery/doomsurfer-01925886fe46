@@ -4,8 +4,8 @@ let dosBox;
 const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
-        js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
-        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.js`
+        js: `https://js-dos.com/${JS_DOS_VERSION}/js-dos.js`,
+        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/wdosbox.js`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
@@ -49,7 +49,7 @@ function isWebAssemblySupported() {
 }
 
 function isDosBoxAvailable() {
-    return typeof window.Dos !== 'undefined' && typeof window.Dos === 'function';
+    return typeof DosBox !== 'undefined' && typeof DosBox.Dos === 'function';
 }
 
 async function loadScript(src, timeout = 10000) {
@@ -86,7 +86,6 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
                 await loadScript(url.wdosbox);
 
                 if (isDosBoxAvailable()) {
-                    window.emulators.pathPrefix = url.wdosbox.substring(0, url.wdosbox.lastIndexOf('/') + 1);
                     showLoadingIndicator(true, 100, 'js-dos loaded successfully');
                     return;
                 }
@@ -114,7 +113,7 @@ async function startDoom() {
             throw new Error('jsdos element not found');
         }
         
-        dosBox = await Dos(jsdos);
+        dosBox = await DosBox.Dos(jsdos);
         
         if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
             throw new Error('DosBox object does not have expected methods');
