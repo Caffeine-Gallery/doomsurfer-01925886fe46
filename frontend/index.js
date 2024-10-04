@@ -5,15 +5,15 @@ const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
         js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
-        wasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm`
+        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.js`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
-        wasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm`
+        wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.js`
     },
     {
         js: '/js-dos.js',
-        wasm: '/wdosbox.wasm'
+        wdosbox: '/wdosbox.js'
     }
 ];
 
@@ -75,18 +75,6 @@ async function loadScript(src, timeout = 10000) {
     });
 }
 
-async function isValidWebAssembly(url) {
-    try {
-        const response = await fetch(url);
-        const buffer = await response.arrayBuffer();
-        await WebAssembly.compile(buffer);
-        return true;
-    } catch (error) {
-        console.error(`Invalid WebAssembly file at ${url}:`, error);
-        return false;
-    }
-}
-
 async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
     for (let i = 0; i < retries; i++) {
         for (const url of CDN_URLS) {
@@ -94,14 +82,11 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
                 showLoadingIndicator(true, 0, `Attempting to load js-dos from ${url.js}...`);
                 await loadScript(url.js);
                 
-                showLoadingIndicator(true, 50, `Verifying WebAssembly file...`);
-                const isValidWasm = await isValidWebAssembly(url.wasm);
-                if (!isValidWasm) {
-                    throw new Error(`Invalid WebAssembly file at ${url.wasm}`);
-                }
+                showLoadingIndicator(true, 50, `Loading wdosbox...`);
+                await loadScript(url.wdosbox);
 
                 if (isDosBoxAvailable()) {
-                    window.emulators.pathPrefix = url.wasm.substring(0, url.wasm.lastIndexOf('/') + 1);
+                    window.emulators.pathPrefix = url.wdosbox.substring(0, url.wdosbox.lastIndexOf('/') + 1);
                     showLoadingIndicator(true, 100, 'js-dos loaded successfully');
                     return;
                 }
