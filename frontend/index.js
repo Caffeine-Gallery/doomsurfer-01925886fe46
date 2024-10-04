@@ -1,7 +1,7 @@
 import { backend } from 'declarations/backend';
 
 let dosBox;
-const JS_DOS_VERSION = '7.4';
+const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
         js: `https://js-dos.com/${JS_DOS_VERSION}/js-dos.js`,
@@ -50,6 +50,11 @@ function isDosAvailable() {
 
 async function loadScript(src, timeout = 10000) {
     return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) {
+            resolve();
+            return;
+        }
+
         const script = document.createElement('script');
         script.src = src;
 
