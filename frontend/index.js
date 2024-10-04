@@ -194,38 +194,28 @@ async function startDoom() {
             throw new Error('Canvas element not found or invalid');
         }
         
-        await getDos();
+        const Dos = await getDos();
         console.log('Dos object acquired');
         
         showLoadingIndicator(true, 25, 'Initializing DosBox...');
-        const dosbox = await initializeDosBox(canvas);
+        const ci = await Dos.ci(canvas);
         
         console.log('DosBox initialized');
         
         showLoadingIndicator(true, 50, 'Downloading DOOM...');
-        const doomZipContent = await downloadZipFile("https://js-dos.com/cdn/upload/DOOM-@evilution.zip");
+        const doomZipUrl = "https://js-dos.com/cdn/upload/DOOM-@evilution.zip";
         
-        showLoadingIndicator(true, 75, 'Mounting DOOM...');
-        if (dosbox && dosbox.fs && typeof dosbox.fs.createFile === 'function') {
-            await dosbox.fs.createFile("DOOM-@evilution.zip", new Uint8Array(doomZipContent));
-            console.log('DOOM-@evilution.zip created successfully');
-        } else {
-            throw new Error('Unable to create DOOM-@evilution.zip file. DosBox file system not available.');
-        }
-        
-        console.log('DOOM mounted successfully');
+        showLoadingIndicator(true, 75, 'Mounting and starting DOOM...');
+        await ci.mount(doomZipUrl);
         
         showLoadingIndicator(true, 90, 'Starting DOOM...');
-        if (dosbox && typeof dosbox.mount === 'function' && typeof dosbox.extract === 'function') {
-            await dosbox.mount("DOOM-@evilution.zip");
-            await dosbox.extract("DOOM-@evilution.zip");
-            await dosbox.main(["-c", "cd DOOM", "-c", "DOOM.EXE"]);
-            console.log('DOOM started successfully');
-        } else {
-            throw new Error('Unable to run DOOM.EXE. Required DosBox methods not available.');
-        }
+        await ci.dosboxDirect([
+            "cd DOOM",
+            "DOOM.EXE"
+        ]);
         
-        dosBox = dosbox;
+        console.log('DOOM started successfully');
+        dosBox = ci;
         showLoadingIndicator(false);
     } catch (error) {
         console.error('Failed to start DOOM:', error);
