@@ -172,6 +172,15 @@ async function initializeDosBox(canvas) {
     });
 }
 
+async function downloadZipFile(url) {
+    showLoadingIndicator(true, 50, 'Downloading DOOM...');
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to download DOOM: ${response.statusText}`);
+    }
+    return await response.arrayBuffer();
+}
+
 async function startDoom() {
     try {
         if (!isWebAssemblySupported()) {
@@ -193,9 +202,12 @@ async function startDoom() {
         
         console.log('DosBox initialized');
         
-        showLoadingIndicator(true, 50, 'Mounting DOOM...');
+        showLoadingIndicator(true, 50, 'Downloading DOOM...');
+        const doomZipContent = await downloadZipFile("https://js-dos.com/cdn/upload/DOOM-@evilution.zip");
+        
+        showLoadingIndicator(true, 75, 'Mounting DOOM...');
         if (dosbox && dosbox.fs && typeof dosbox.fs.createFile === 'function') {
-            await dosbox.fs.createFile("DOOM.ZIP", "https://js-dos.com/cdn/upload/DOOM-@evilution.zip");
+            await dosbox.fs.createFile("DOOM.ZIP", new Uint8Array(doomZipContent));
             console.log('DOOM.ZIP created successfully');
         } else {
             throw new Error('Unable to create DOOM.ZIP file. DosBox file system not available.');
@@ -203,7 +215,7 @@ async function startDoom() {
         
         console.log('DOOM mounted successfully');
         
-        showLoadingIndicator(true, 75, 'Starting DOOM...');
+        showLoadingIndicator(true, 90, 'Starting DOOM...');
         if (dosbox && typeof dosbox.main === 'function') {
             await dosbox.main(["-c", "MOUNT C .", "-c", "C:", "-c", "DOOM.EXE"]);
             console.log('DOOM started successfully');
