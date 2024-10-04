@@ -74,6 +74,14 @@ button:hover:not(:disabled) {
     font-weight: bold;
 }
 
+#retryLoad {
+    background-color: #4CAF50;
+}
+
+#retryLoad:hover {
+    background-color: #45a049;
+}
+
 @media (max-width: 600px) {
     #jsdos {
         height: 300px;
