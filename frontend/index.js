@@ -76,6 +76,19 @@ async function loadScript(src, timeout = 10000) {
     });
 }
 
+async function loadWebAssembly(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch WebAssembly file: ${response.statusText}`);
+    }
+    const contentType = response.headers.get('Content-Type');
+    if (!contentType || !contentType.includes('application/wasm')) {
+        throw new Error(`Invalid content type for WebAssembly file: ${contentType}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return WebAssembly.compile(arrayBuffer);
+}
+
 function validateJsDos() {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -101,6 +114,9 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
             try {
                 showLoadingIndicator(true, 0, `Attempting to load js-dos from ${url.js}...`);
                 await loadScript(url.js);
+                
+                showLoadingIndicator(true, 50, `Loading WebAssembly from ${url.wasm}...`);
+                await loadWebAssembly(url.wasm);
                 
                 const isValid = await validateJsDos();
                 if (isValid) {
