@@ -2,8 +2,11 @@ import { backend } from 'declarations/backend';
 
 let dosBox;
 const JS_DOS_VERSION = '6.22';
-const PRIMARY_CDN = `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`;
-const FALLBACK_CDN = `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`;
+const CDN_URLS = [
+    `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
+    `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
+    '/js-dos.js' // Local fallback
+];
 
 function showLoadingIndicator(show, progress = 0, message = '') {
     const indicator = document.getElementById("loadingIndicator");
@@ -40,44 +43,50 @@ function isDosBoxAvailable() {
     return typeof window.Dos !== 'undefined' && typeof window.Dos === 'function';
 }
 
-function loadScript(src) {
+function loadScript(src, timeout = 10000) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = src;
         script.onload = resolve;
         script.onerror = reject;
+
+        const timeoutId = setTimeout(() => {
+            reject(new Error(`Script load timed out for ${src}`));
+        }, timeout);
+
+        script.onload = () => {
+            clearTimeout(timeoutId);
+            resolve();
+        };
+
+        script.onerror = () => {
+            clearTimeout(timeoutId);
+            reject(new Error(`Failed to load script ${src}`));
+        };
+
         document.head.appendChild(script);
     });
 }
 
-async function loadJsDos(timeout = 30000) {
-    showLoadingIndicator(true, 0, 'Loading js-dos...');
-    const startTime = Date.now();
-
-    try {
-        await loadScript(PRIMARY_CDN);
-    } catch (error) {
-        console.warn('Failed to load js-dos from primary CDN, trying fallback...', error);
-        try {
-            await loadScript(FALLBACK_CDN);
-        } catch (fallbackError) {
-            throw new Error('Failed to load js-dos from both primary and fallback CDNs');
-        }
-    }
-
-    return new Promise((resolve, reject) => {
-        const checkInterval = setInterval(() => {
-            if (isDosBoxAvailable()) {
-                clearInterval(checkInterval);
-                resolve(true);
-            } else if (Date.now() - startTime > timeout) {
-                clearInterval(checkInterval);
-                reject(new Error('Timeout waiting for js-dos to load'));
+async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
+    for (let i = 0; i < retries; i++) {
+        for (const url of CDN_URLS) {
+            try {
+                showLoadingIndicator(true, 0, `Attempting to load js-dos from ${url}...`);
+                await loadScript(url);
+                if (isDosBoxAvailable()) {
+                    showLoadingIndicator(true, 100, 'js-dos loaded successfully');
+                    return;
+                }
+            } catch (error) {
+                console.warn(`Failed to load js-dos from ${url}:`, error);
             }
-            const progress = Math.min(Math.floor((Date.now() - startTime) / (timeout / 100)), 99);
-            showLoadingIndicator(true, progress, 'Loading js-dos...');
-        }, 100);
-    });
+        }
+        const delay = backoff * Math.pow(2, i);
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    throw new Error('Failed to load js-dos after multiple attempts');
 }
 
 async function startDoom() {
@@ -128,7 +137,7 @@ async function retryLoad() {
     }
     
     try {
-        await loadJsDos();
+        await loadJsDosWithRetry();
         const startButton = document.getElementById("startGame");
         if (startButton) {
             startButton.disabled = false;
@@ -170,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!isWebAssemblySupported()) {
             throw new Error('WebAssembly is not supported in this browser');
         }
-        await loadJsDos();
+        await loadJsDosWithRetry();
         if (startButton) {
             startButton.disabled = false;
         }
