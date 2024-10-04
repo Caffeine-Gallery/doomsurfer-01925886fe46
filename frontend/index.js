@@ -13,15 +13,29 @@ function showErrorMessage(message) {
     errorElement.style.display = "block";
 }
 
+function isDosBoxAvailable() {
+    return typeof DosBox !== 'undefined' && DosBox && typeof DosBox.create === 'function';
+}
+
+async function waitForDosBox(timeout = 10000) {
+    const startTime = Date.now();
+    while (!isDosBoxAvailable()) {
+        if (Date.now() - startTime > timeout) {
+            throw new Error('Timeout waiting for DosBox to become available');
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+}
+
 function loadJsDos(retries = 3) {
     return new Promise((resolve, reject) => {
-        if (typeof DosBox !== 'undefined') {
+        if (isDosBoxAvailable()) {
             resolve();
             return;
         }
 
         const script = document.createElement('script');
-        script.src = '/js/js-dos.js';
+        script.src = 'https://js-dos.com/6.22/current/js-dos.js';
         script.onload = resolve;
         script.onerror = () => {
             if (retries > 0) {
@@ -36,8 +50,9 @@ function loadJsDos(retries = 3) {
 }
 
 async function startDoom() {
-    const jsdos = document.getElementById("jsdos");
     try {
+        await waitForDosBox();
+        const jsdos = document.getElementById("jsdos");
         dosBox = await DosBox.create(jsdos);
         await dosBox.run("https://js-dos.com/6.22/current/games/DOOM.zip");
     } catch (error) {
@@ -62,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         await loadJsDos();
+        await waitForDosBox();
         startButton.disabled = false;
         showLoadingIndicator(false);
     } catch (error) {
