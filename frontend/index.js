@@ -8,15 +8,21 @@ const FALLBACK_CDN = `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist
 function showLoadingIndicator(show, progress = 0, message = '') {
     const indicator = document.getElementById("loadingIndicator");
     const progressSpan = document.getElementById("loadingProgress");
-    indicator.style.display = show ? "block" : "none";
-    progressSpan.textContent = `${progress}%`;
-    indicator.textContent = `${message} ${progressSpan.outerHTML}`;
+    const messageSpan = document.getElementById("loadingMessage");
+    
+    if (indicator && progressSpan && messageSpan) {
+        indicator.style.display = show ? "block" : "none";
+        progressSpan.textContent = `${progress}%`;
+        messageSpan.textContent = message;
+    }
 }
 
 function showErrorMessage(message) {
     const errorElement = document.getElementById("errorMessage");
-    errorElement.textContent = message;
-    errorElement.style.display = "block";
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = "block";
+    }
 }
 
 function isWebAssemblySupported() {
@@ -83,6 +89,10 @@ async function startDoom() {
         showLoadingIndicator(true, 0, 'Initializing DosBox...');
         
         const jsdos = document.getElementById("jsdos");
+        if (!jsdos) {
+            throw new Error('jsdos element not found');
+        }
+        
         dosBox = await Dos(jsdos);
         
         if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
@@ -101,7 +111,10 @@ async function startDoom() {
     } catch (error) {
         console.error('Failed to start DOOM:', error);
         showErrorMessage(`Failed to start DOOM: ${error.message}. Please try refreshing the page or click "Retry Loading".`);
-        document.getElementById("retryLoad").style.display = "inline-block";
+        const retryButton = document.getElementById("retryLoad");
+        if (retryButton) {
+            retryButton.style.display = "inline-block";
+        }
     } finally {
         showLoadingIndicator(false);
     }
@@ -109,15 +122,23 @@ async function startDoom() {
 
 async function retryLoad() {
     showErrorMessage('');
-    document.getElementById("retryLoad").style.display = "none";
+    const retryButton = document.getElementById("retryLoad");
+    if (retryButton) {
+        retryButton.style.display = "none";
+    }
     
     try {
         await loadJsDos();
-        document.getElementById("startGame").disabled = false;
+        const startButton = document.getElementById("startGame");
+        if (startButton) {
+            startButton.disabled = false;
+        }
     } catch (error) {
         console.error('Failed to load js-dos:', error);
         showErrorMessage(`Failed to load required resources: ${error.message}. Please check your internet connection and try again.`);
-        document.getElementById("retryLoad").style.display = "inline-block";
+        if (retryButton) {
+            retryButton.style.display = "inline-block";
+        }
     } finally {
         showLoadingIndicator(false);
     }
@@ -128,28 +149,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fullscreenButton = document.getElementById("fullscreen");
     const retryButton = document.getElementById("retryLoad");
 
-    startButton.addEventListener("click", startDoom);
-    fullscreenButton.addEventListener("click", () => {
-        if (dosBox && typeof dosBox.fullscreen === 'function') {
-            dosBox.fullscreen();
-        }
-    });
-    retryButton.addEventListener("click", retryLoad);
+    if (startButton) {
+        startButton.addEventListener("click", startDoom);
+        startButton.disabled = true;
+    }
 
-    startButton.disabled = true;
+    if (fullscreenButton) {
+        fullscreenButton.addEventListener("click", () => {
+            if (dosBox && typeof dosBox.fullscreen === 'function') {
+                dosBox.fullscreen();
+            }
+        });
+    }
+
+    if (retryButton) {
+        retryButton.addEventListener("click", retryLoad);
+    }
 
     try {
         if (!isWebAssemblySupported()) {
             throw new Error('WebAssembly is not supported in this browser');
         }
         await loadJsDos();
-        startButton.disabled = false;
+        if (startButton) {
+            startButton.disabled = false;
+        }
     } catch (error) {
         console.error('Failed to initialize:', error);
         showErrorMessage(`Initialization failed: ${error.message}. Please check your browser compatibility or try a different browser.`);
-        retryButton.style.display = "inline-block";
+        if (retryButton) {
+            retryButton.style.display = "inline-block";
+        }
     }
 });
-
-// You can add more functionality here, such as interacting with the backend
-// to save high scores or game settings in the future.
