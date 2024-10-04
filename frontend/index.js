@@ -32,11 +32,19 @@ function isDosBoxAvailable() {
 
 async function loadJsDos(timeout = 30000) {
     return new Promise((resolve, reject) => {
+        if (window.jsDosLoadError) {
+            reject(new Error('js-dos failed to load'));
+            return;
+        }
+
         const startTime = Date.now();
         const checkInterval = setInterval(() => {
             if (isDosBoxAvailable()) {
                 clearInterval(checkInterval);
                 resolve(true);
+            } else if (window.jsDosLoadError) {
+                clearInterval(checkInterval);
+                reject(new Error('js-dos failed to load'));
             } else if (Date.now() - startTime > timeout) {
                 clearInterval(checkInterval);
                 reject(new Error('Timeout waiting for js-dos to load'));
@@ -66,10 +74,7 @@ async function startDoom() {
         }
         await waitForDosBox();
         const jsdos = document.getElementById("jsdos");
-        dosBox = await Dos(jsdos, { 
-            wdosboxUrl: "/js/wdosbox.js",
-            wasmUrl: "/js/wdosbox.wasm"
-        });
+        dosBox = await Dos(jsdos);
         await dosBox.run("https://js-dos.com/6.22/current/games/DOOM.zip");
     } catch (error) {
         console.error('Failed to start DOOM:', error);
@@ -84,6 +89,16 @@ async function retryLoadJsDos() {
     showErrorMessage('');
     document.getElementById("retryLoad").style.display = "none";
     showLoadingIndicator(true, 0);
+    
+    const script = document.createElement('script');
+    script.src = "https://js-dos.com/6.22/current/js-dos.js";
+    script.onerror = () => {
+        window.jsDosLoadError = true;
+        showErrorMessage('Failed to load js-dos. Please check your internet connection and try again.');
+        document.getElementById("retryLoad").style.display = "inline-block";
+    };
+    document.head.appendChild(script);
+
     try {
         await loadJsDos();
         document.getElementById("startGame").disabled = false;
