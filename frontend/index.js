@@ -151,6 +151,17 @@ async function getDos() {
     return window.Dos;
 }
 
+async function waitForDosBoxMethods(ci, timeout = 10000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+        if (typeof ci.mount === 'function' && typeof ci.run === 'function') {
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return false;
+}
+
 async function startDoom() {
     try {
         if (!isWebAssemblySupported()) {
@@ -167,26 +178,19 @@ async function startDoom() {
         const Dos = await getDos();
         console.log('Dos object:', Dos);
         
-        const ci = await new Promise((resolve, reject) => {
-            setTimeout(async () => {
-                try {
-                    const instance = await Dos(jsdos, { 
-                        wdosboxUrl: CDN_URLS[0].wdosbox,
-                        wasmUrl: CDN_URLS[0].wdosboxWasm
-                    });
-                    resolve(instance);
-                } catch (error) {
-                    reject(error);
-                }
-            }, 1000); // Add a delay before initialization
+        const ci = await Dos(jsdos, { 
+            wdosboxUrl: CDN_URLS[0].wdosbox,
+            wasmUrl: CDN_URLS[0].wdosboxWasm
         });
         
         console.log('DosBox instance:', ci);
         
-        if (typeof ci.mount !== 'function' || typeof ci.run !== 'function') {
-            console.error('DosBox methods:', { mount: typeof ci.mount, run: typeof ci.run });
-            throw new Error('DosBox object does not have expected methods');
+        const methodsReady = await waitForDosBoxMethods(ci);
+        if (!methodsReady) {
+            throw new Error('DosBox methods not available after timeout');
         }
+        
+        console.log('DosBox methods:', { mount: typeof ci.mount, run: typeof ci.run });
         
         showLoadingIndicator(true, 50, 'Mounting DOOM...');
         
