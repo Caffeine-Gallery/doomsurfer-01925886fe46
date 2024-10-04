@@ -159,17 +159,15 @@ async function initializeDosBox(jsdos) {
             return;
         }
 
-        const ci = Dos(jsdos, {
+        Dos(jsdos, {
             wdosboxUrl: CDN_URLS[0].wdosbox,
-            wasmUrl: CDN_URLS[0].wdosboxWasm,
-            onready: (fs, main) => {
-                console.log('DosBox is ready');
-                resolve({ ci, fs, main });
-            },
-            onerror: (error) => {
-                console.error('DosBox error:', error);
-                reject(error);
-            }
+            wasmUrl: CDN_URLS[0].wdosboxWasm
+        }).then(dosbox => {
+            console.log('DosBox is ready');
+            resolve(dosbox);
+        }).catch(error => {
+            console.error('DosBox error:', error);
+            reject(error);
         });
     });
 }
@@ -191,39 +189,21 @@ async function startDoom() {
         console.log('Dos object acquired');
         
         showLoadingIndicator(true, 25, 'Initializing DosBox...');
-        const { ci, fs, main } = await initializeDosBox(jsdos);
+        const dosbox = await initializeDosBox(jsdos);
         
         console.log('DosBox initialized');
         
         showLoadingIndicator(true, 50, 'Mounting DOOM...');
-        await new Promise((resolve, reject) => {
-            ci.mount("https://js-dos.com/6.22/current/games/DOOM.zip", {
-                success: () => {
-                    console.log('DOOM mounted successfully');
-                    resolve();
-                },
-                error: (error) => {
-                    console.error('Failed to mount DOOM:', error);
-                    reject(new Error('Failed to mount DOOM'));
-                }
-            });
-        });
+        await dosbox.mount("https://js-dos.com/6.22/current/games/DOOM.zip");
+        
+        console.log('DOOM mounted successfully');
         
         showLoadingIndicator(true, 75, 'Starting DOOM...');
-        await new Promise((resolve, reject) => {
-            ci.run("DOOM.EXE", {
-                success: () => {
-                    console.log('DOOM started successfully');
-                    resolve();
-                },
-                error: (error) => {
-                    console.error('Failed to start DOOM:', error);
-                    reject(new Error('Failed to start DOOM'));
-                }
-            });
-        });
+        await dosbox.run("DOOM.EXE");
         
-        dosBox = ci;
+        console.log('DOOM started successfully');
+        
+        dosBox = dosbox;
         showLoadingIndicator(false);
     } catch (error) {
         console.error('Failed to start DOOM:', error);
