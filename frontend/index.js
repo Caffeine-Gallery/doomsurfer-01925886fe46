@@ -44,7 +44,7 @@ function isWebAssemblySupported() {
     return false;
 }
 
-function isDosBoxAvailable() {
+function isDosAvailable() {
     return typeof window.Dos === 'function';
 }
 
@@ -76,22 +76,9 @@ function validateJsDos() {
         setTimeout(() => {
             console.log('Validating js-dos...');
             console.log('window.Dos:', typeof window.Dos);
-            console.log('window.DosBox:', typeof window.DosBox);
             
             if (typeof window.Dos !== 'function') {
                 console.error('window.Dos is not a function');
-                resolve(false);
-                return;
-            }
-            
-            if (typeof window.DosBox !== 'object') {
-                console.error('window.DosBox is not an object');
-                resolve(false);
-                return;
-            }
-            
-            if (typeof window.DosBox.Dos !== 'function') {
-                console.error('window.DosBox.Dos is not a function');
                 resolve(false);
                 return;
             }
@@ -155,9 +142,9 @@ async function loadJsDosFromFile(file) {
     });
 }
 
-async function getDosBox() {
-    if (!isDosBoxAvailable()) {
-        throw new Error('DosBox is not available. Please ensure js-dos is loaded correctly.');
+async function getDos() {
+    if (!isDosAvailable()) {
+        throw new Error('Dos is not available. Please ensure js-dos is loaded correctly.');
     }
     return window.Dos;
 }
@@ -168,15 +155,17 @@ async function startDoom() {
             throw new Error('WebAssembly is not supported in this browser');
         }
         
-        showLoadingIndicator(true, 0, 'Initializing DosBox...');
+        showLoadingIndicator(true, 0, 'Initializing Dos...');
         
         const jsdos = document.getElementById("jsdos");
         if (!jsdos) {
             throw new Error('jsdos element not found');
         }
         
-        const Dos = await getDosBox();
-        dosBox = await Dos(jsdos);
+        const Dos = await getDos();
+        dosBox = await Dos(jsdos, { 
+            wdosboxUrl: CDN_URLS[0].wdosbox 
+        });
         
         if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
             throw new Error('DosBox object does not have expected methods');
@@ -242,9 +231,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (fullscreenButton) {
         fullscreenButton.addEventListener("click", async () => {
             try {
-                const Dos = await getDosBox();
-                if (dosBox && typeof Dos.fullscreen === 'function') {
-                    Dos.fullscreen();
+                if (dosBox && typeof dosBox.fullscreen === 'function') {
+                    dosBox.fullscreen();
                 }
             } catch (error) {
                 console.error('Failed to enter fullscreen:', error);
