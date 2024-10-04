@@ -194,22 +194,22 @@ async function startDoom() {
         console.log('DosBox initialized');
         
         showLoadingIndicator(true, 50, 'Mounting DOOM...');
-        await new Promise((resolve, reject) => {
-            dosbox.fs.createFile("DOOM.ZIP", "https://js-dos.com/6.22/current/games/DOOM.zip").then(() => {
-                console.log('DOOM.ZIP created successfully');
-                resolve();
-            }).catch(error => {
-                console.error('Failed to create DOOM.ZIP:', error);
-                reject(error);
-            });
-        });
+        if (dosbox && dosbox.fs && typeof dosbox.fs.createFile === 'function') {
+            await dosbox.fs.createFile("DOOM.ZIP", "https://js-dos.com/6.22/current/games/DOOM.zip");
+            console.log('DOOM.ZIP created successfully');
+        } else {
+            throw new Error('Unable to create DOOM.ZIP file. DosBox file system not available.');
+        }
         
         console.log('DOOM mounted successfully');
         
         showLoadingIndicator(true, 75, 'Starting DOOM...');
-        await dosbox.run("DOOM.EXE");
-        
-        console.log('DOOM started successfully');
+        if (typeof dosbox.run === 'function') {
+            await dosbox.run("DOOM.EXE");
+            console.log('DOOM started successfully');
+        } else {
+            throw new Error('Unable to run DOOM.EXE. DosBox run method not available.');
+        }
         
         dosBox = dosbox;
         showLoadingIndicator(false);
