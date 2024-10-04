@@ -1,0 +1,64 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.container {
+    text-align: center;
+    max-width: 800px;
+    width: 100%;
+}
+
+h1 {
+    color: #ff4136;
+}
+
+#jsdos {
+    width: 100%;
+    height: 400px;
+    background-color: #000000;
+    margin-bottom: 20px;
+}
+
+button {
+    background-color: #ff4136;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #ff7066;
+}
+
+.instructions {
+    margin-top: 30px;
+    background-color: #333333;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 600px;
+    width: 100%;
+}
+
+.instructions h2 {
+    color: #ff4136;
+}
+
+.instructions p {
+    margin: 10px 0;
+}
+
+@media (max-width: 600px) {
+    #jsdos {
+        height: 300px;
+    }
+}
