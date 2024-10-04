@@ -27,7 +27,7 @@ function isWebAssemblySupported() {
 }
 
 function isDosBoxAvailable() {
-    return typeof window.Dos !== 'undefined' && typeof window.Dos === 'function';
+    return typeof window.DosBox !== 'undefined' && typeof window.DosBox === 'function';
 }
 
 async function loadJsDos(timeout = 30000) {
@@ -62,19 +62,22 @@ async function startDoom() {
         showLoadingIndicator(true, 0);
         
         const jsdos = document.getElementById("jsdos");
-        dosBox = await Dos(jsdos, {
+        dosBox = await DosBox(jsdos, {
             wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
             wasmUrl: "https://js-dos.com/6.22/current/wdosbox.wasm"
         });
         
+        if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
+            throw new Error('DosBox object does not have expected methods');
+        }
+        
         showLoadingIndicator(true, 50);
         
-        await dosBox.run("https://js-dos.com/6.22/current/games/DOOM.zip", {
-            onprogress: (stage, total, loaded) => {
-                const progress = Math.floor((loaded / total) * 100);
-                showLoadingIndicator(true, 50 + progress / 2);
-            }
-        });
+        await dosBox.mount("https://js-dos.com/6.22/current/games/DOOM.zip");
+        
+        showLoadingIndicator(true, 75);
+        
+        await dosBox.run("DOOM.EXE");
         
         showLoadingIndicator(false);
     } catch (error) {
@@ -119,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     startButton.addEventListener("click", startDoom);
     fullscreenButton.addEventListener("click", () => {
-        if (dosBox) {
+        if (dosBox && typeof dosBox.fullscreen === 'function') {
             dosBox.fullscreen();
         }
     });
