@@ -5,12 +5,12 @@ const JS_DOS_VERSION = '6.22';
 const CDN_URLS = [
     {
         js: `https://js-dos.com/${JS_DOS_VERSION}/current/js-dos.js`,
-        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox-nosync.js`,
+        wdosbox: `https://js-dos.com/${JS_DOS_VERSION}/current/dosbox.js`,
         wdosboxWasm: `https://js-dos.com/${JS_DOS_VERSION}/current/wdosbox.wasm.js`
     },
     {
         js: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/js-dos.js`,
-        wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox-nosync.js`,
+        wdosbox: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/dosbox.js`,
         wdosboxWasm: `https://cdn.jsdelivr.net/npm/js-dos@${JS_DOS_VERSION}/dist/wdosbox.wasm.js`
     }
 ];
@@ -99,7 +99,7 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
                 showLoadingIndicator(true, 0, `Attempting to load js-dos from ${url.js}...`);
                 await loadScript(url.js);
                 
-                showLoadingIndicator(true, 50, `Loading wdosbox-nosync...`);
+                showLoadingIndicator(true, 50, `Loading dosbox...`);
                 await loadScript(url.wdosbox);
 
                 const isValid = await validateJsDos();
