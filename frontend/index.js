@@ -30,6 +30,19 @@ function isDosBoxAvailable() {
     return typeof window.Dos !== 'undefined' && typeof window.Dos === 'function';
 }
 
+async function checkWebAssemblyFile(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const buffer = await response.arrayBuffer();
+        await WebAssembly.compile(buffer);
+        return true;
+    } catch (e) {
+        console.error("WebAssembly file check failed:", e);
+        return false;
+    }
+}
+
 async function loadJsDos(timeout = 30000) {
     return new Promise((resolve, reject) => {
         if (window.jsDosLoadError) {
@@ -73,38 +86,39 @@ async function startDoom() {
             throw new Error('WebAssembly is not supported in this browser');
         }
         await waitForDosBox();
+
+        const wasmUrl = '/wdosbox.wasm';
+        const isWasmAvailable = await checkWebAssemblyFile(wasmUrl);
+        if (!isWasmAvailable) {
+            throw new Error('WebAssembly file is not accessible or valid');
+        }
+
         const jsdos = document.getElementById("jsdos");
-        dosBox = await Dos(jsdos);
+        dosBox = await Dos(jsdos, {
+            wdosboxUrl: "/wdosbox.js",
+            wasmUrl: wasmUrl
+        });
         await dosBox.run("https://js-dos.com/6.22/current/games/DOOM.zip");
     } catch (error) {
         console.error('Failed to start DOOM:', error);
-        showErrorMessage(`Failed to start DOOM: ${error.message}. Please try refreshing the page or click "Retry Loading js-dos".`);
+        showErrorMessage(`Failed to start DOOM: ${error.message}. Please try refreshing the page or click "Retry Loading".`);
         document.getElementById("retryLoad").style.display = "inline-block";
     } finally {
         showLoadingIndicator(false);
     }
 }
 
-async function retryLoadJsDos() {
+async function retryLoad() {
     showErrorMessage('');
     document.getElementById("retryLoad").style.display = "none";
     showLoadingIndicator(true, 0);
     
-    const script = document.createElement('script');
-    script.src = "https://js-dos.com/6.22/current/js-dos.js";
-    script.onerror = () => {
-        window.jsDosLoadError = true;
-        showErrorMessage('Failed to load js-dos. Please check your internet connection and try again.');
-        document.getElementById("retryLoad").style.display = "inline-block";
-    };
-    document.head.appendChild(script);
-
     try {
         await loadJsDos();
         document.getElementById("startGame").disabled = false;
     } catch (error) {
         console.error('Failed to load js-dos:', error);
-        showErrorMessage(`Failed to load js-dos library: ${error.message}. Please check your internet connection and try again.`);
+        showErrorMessage(`Failed to load required resources: ${error.message}. Please check your internet connection and try again.`);
         document.getElementById("retryLoad").style.display = "inline-block";
     } finally {
         showLoadingIndicator(false);
@@ -122,7 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             dosBox.fullscreen();
         }
     });
-    retryButton.addEventListener("click", retryLoadJsDos);
+    retryButton.addEventListener("click", retryLoad);
 
     startButton.disabled = true;
     showLoadingIndicator(true, 0);
