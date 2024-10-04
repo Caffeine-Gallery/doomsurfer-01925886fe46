@@ -7,14 +7,32 @@ function showLoadingIndicator(show) {
     indicator.style.display = show ? "block" : "none";
 }
 
-function checkJsDosLoaded() {
-    const startButton = document.getElementById("startGame");
-    if (typeof DosBox !== 'undefined') {
-        startButton.disabled = false;
-        showLoadingIndicator(false);
-    } else {
-        setTimeout(checkJsDosLoaded, 100);
-    }
+function showErrorMessage(message) {
+    const errorElement = document.getElementById("errorMessage");
+    errorElement.textContent = message;
+    errorElement.style.display = "block";
+}
+
+function loadJsDos(retries = 3) {
+    return new Promise((resolve, reject) => {
+        if (typeof DosBox !== 'undefined') {
+            resolve();
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = '/js/js-dos.js';
+        script.onload = resolve;
+        script.onerror = () => {
+            if (retries > 0) {
+                console.log(`Retrying to load js-dos. Attempts left: ${retries - 1}`);
+                setTimeout(() => loadJsDos(retries - 1).then(resolve).catch(reject), 1000);
+            } else {
+                reject(new Error('Failed to load js-dos after multiple attempts'));
+            }
+        };
+        document.head.appendChild(script);
+    });
 }
 
 async function startDoom() {
@@ -24,11 +42,11 @@ async function startDoom() {
         await dosBox.run("https://js-dos.com/6.22/current/games/DOOM.zip");
     } catch (error) {
         console.error('Failed to start DOOM:', error);
-        alert('Failed to start DOOM. Please try refreshing the page.');
+        showErrorMessage('Failed to start DOOM. Please try refreshing the page.');
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const startButton = document.getElementById("startGame");
     const fullscreenButton = document.getElementById("fullscreen");
 
@@ -41,15 +59,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startButton.disabled = true;
     showLoadingIndicator(true);
-    checkJsDosLoaded();
 
-    // Set a timeout to handle cases where the library fails to load
-    setTimeout(() => {
-        if (typeof DosBox === 'undefined') {
-            showLoadingIndicator(false);
-            alert('Failed to load js-dos library. Please check your internet connection and try refreshing the page.');
-        }
-    }, 10000); // 10 seconds timeout
+    try {
+        await loadJsDos();
+        startButton.disabled = false;
+        showLoadingIndicator(false);
+    } catch (error) {
+        console.error('Failed to load js-dos:', error);
+        showLoadingIndicator(false);
+        showErrorMessage('Failed to load js-dos library. Please check your internet connection and try refreshing the page.');
+    }
 });
 
 // You can add more functionality here, such as interacting with the backend

@@ -68,6 +68,12 @@ button:hover:not(:disabled) {
     color: #ff4136;
 }
 
+#errorMessage {
+    margin-top: 10px;
+    color: #ff4136;
+    font-weight: bold;
+}
+
 @media (max-width: 600px) {
     #jsdos {
         height: 300px;
