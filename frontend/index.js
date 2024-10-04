@@ -165,9 +165,11 @@ async function startDoom() {
         }
         
         const Dos = await getDos();
+        const wasmUrl = `${CDN_URLS[0].wdosboxWasm}?v=${Date.now()}`; // Add cache-busting parameter
+        console.log('Using WASM URL:', wasmUrl); // Log the WASM URL being used
         dosBox = await Dos(jsdos, { 
             wdosboxUrl: CDN_URLS[0].wdosbox,
-            wasmUrl: CDN_URLS[0].wdosboxWasm
+            wasmUrl: wasmUrl
         });
         
         if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
