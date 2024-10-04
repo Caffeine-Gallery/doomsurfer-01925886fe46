@@ -72,7 +72,22 @@ async function loadScript(src, timeout = 10000) {
 }
 
 function validateJsDos() {
-    return typeof Dos === 'function' && typeof DosBox === 'object';
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const isDosValid = typeof Dos === 'function' &&
+                               typeof DosBox === 'object' &&
+                               typeof DosBox.Dos === 'function' &&
+                               typeof DosBox.version === 'string';
+            
+            console.log('js-dos validation result:', isDosValid);
+            console.log('Dos:', typeof Dos);
+            console.log('DosBox:', typeof DosBox);
+            console.log('DosBox.Dos:', typeof DosBox?.Dos);
+            console.log('DosBox.version:', DosBox?.version);
+            
+            resolve(isDosValid);
+        }, 500); // Add a 500ms delay to ensure js-dos has time to initialize
+    });
 }
 
 async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
@@ -86,7 +101,8 @@ async function loadJsDosWithRetry(retries = 3, backoff = 1000) {
                 showLoadingIndicator(true, 50, `Loading wdosbox...`);
                 await loadScript(url.wdosbox);
 
-                if (validateJsDos()) {
+                const isValid = await validateJsDos();
+                if (isValid) {
                     showLoadingIndicator(true, 100, 'js-dos loaded successfully');
                     return;
                 } else {
@@ -112,7 +128,8 @@ async function loadJsDosFromFile(file) {
                 const script = document.createElement('script');
                 script.textContent = event.target.result;
                 document.head.appendChild(script);
-                if (validateJsDos()) {
+                const isValid = await validateJsDos();
+                if (isValid) {
                     resolve();
                 } else {
                     reject(new Error('Loaded file is not a valid js-dos script'));
@@ -139,7 +156,7 @@ async function startDoom() {
             throw new Error('jsdos element not found');
         }
         
-        dosBox = await Dos(jsdos);
+        dosBox = await DosBox.Dos(jsdos);
         
         if (typeof dosBox.mount !== 'function' || typeof dosBox.run !== 'function') {
             throw new Error('DosBox object does not have expected methods');
