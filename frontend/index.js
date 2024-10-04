@@ -165,12 +165,26 @@ async function startDoom() {
         }
         
         const Dos = await getDos();
-        const ci = await Dos(jsdos, { 
-            wdosboxUrl: CDN_URLS[0].wdosbox,
-            wasmUrl: CDN_URLS[0].wdosboxWasm
+        console.log('Dos object:', Dos);
+        
+        const ci = await new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    const instance = await Dos(jsdos, { 
+                        wdosboxUrl: CDN_URLS[0].wdosbox,
+                        wasmUrl: CDN_URLS[0].wdosboxWasm
+                    });
+                    resolve(instance);
+                } catch (error) {
+                    reject(error);
+                }
+            }, 1000); // Add a delay before initialization
         });
         
+        console.log('DosBox instance:', ci);
+        
         if (typeof ci.mount !== 'function' || typeof ci.run !== 'function') {
+            console.error('DosBox methods:', { mount: typeof ci.mount, run: typeof ci.run });
             throw new Error('DosBox object does not have expected methods');
         }
         
