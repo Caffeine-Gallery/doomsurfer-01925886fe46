@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DOOM Emulator</title>
+    <title>DOOM on js-dos</title>
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
     <div id="app">
-        <h1>DOOM Emulator</h1>
-        <div id="jsdos"></div>
-        <button id="startGame" disabled>Start DOOM</button>
-        <button id="fullscreen">Fullscreen</button>
-        <button id="retryLoad" style="display: none;">Retry Loading</button>
-        <input type="file" id="manualJsDosUpload" accept=".js" style="display: none;">
+        <h1>DOOM on js-dos</h1>
+        <div id="dosbox-container">
+            <canvas id="jsdos"></canvas>
+        </div>
+        <div id="controls">
+            <button id="startGame">Start DOOM</button>
+            <button id="fullscreen">Fullscreen</button>
+            <button id="retryLoad" style="display: none;">Retry Loading</button>
+            <input type="file" id="manualJsDosUpload" style="display: none;" accept=".js">
+        </div>
         <div id="loadingIndicator" style="display: none;">
-            Loading: <span id="loadingProgress">0%</span>
-            <span id="loadingMessage"></span>
+            Loading... <span id="loadingProgress">0%</span>
+            <div id="loadingMessage"></div>
         </div>
         <div id="errorMessage" style="display: none;"></div>
     </div>

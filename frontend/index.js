@@ -151,7 +151,7 @@ async function getDos() {
     return window.Dos;
 }
 
-async function initializeDosBox(jsdos) {
+async function initializeDosBox(canvas) {
     return new Promise((resolve, reject) => {
         const Dos = window.Dos;
         if (!Dos) {
@@ -159,7 +159,7 @@ async function initializeDosBox(jsdos) {
             return;
         }
 
-        Dos(jsdos, {
+        Dos(canvas, {
             wdosboxUrl: CDN_URLS[0].wdosbox,
             wasmUrl: CDN_URLS[0].wdosboxWasm
         }).then(dosbox => {
@@ -180,16 +180,16 @@ async function startDoom() {
         
         showLoadingIndicator(true, 0, 'Initializing Dos...');
         
-        const jsdos = document.getElementById("jsdos");
-        if (!jsdos) {
-            throw new Error('jsdos element not found');
+        const canvas = document.getElementById("jsdos");
+        if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
+            throw new Error('Canvas element not found or invalid');
         }
         
         await getDos();
         console.log('Dos object acquired');
         
         showLoadingIndicator(true, 25, 'Initializing DosBox...');
-        const dosbox = await initializeDosBox(jsdos);
+        const dosbox = await initializeDosBox(canvas);
         
         console.log('DosBox initialized');
         
